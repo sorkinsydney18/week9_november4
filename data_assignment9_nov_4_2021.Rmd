@@ -1,6 +1,6 @@
 ---
 title: 'Data Exploration: Emotional Arousal'
-author: "Your name here"
+author: "Sydney Sorkin"
 date: "November 4, 2021"
 output:
   pdf_document: default
@@ -71,7 +71,7 @@ Variable Name         | Variable Description
 
 ```{r}
 #Load the data for Study 1
-Study1_preprocess <- read_dta("Study1ReplicationData.dta")
+study1_preprocess <- read_dta("Study1ReplicationData.dta")
 ```
 To date you have read in data from both .csv and .RData files. The data for this week are stored in another common file type, .dta files. This is the format for data exported using Stata, the other most commonly used statistical software package besides R. Reading these files requires the read_dta() function in the haven package, so be sure to install it if you have not already!
 
@@ -83,8 +83,8 @@ The data is not currently in the most usable condition. As currently read in, ma
 
 ```{r, error=TRUE}
 #Method 1: Renaming by name
-Study1_processing1 <- Study1_preprocess %>% 
-  rename_with(.cols = c(Q13, Q14, Q15), ~c("PUT COMMA SEPARATED LIST OF VARIABLE NAMES AS STRINGS HERE FOR THESE THREE VARIABLES IN ORDER"))
+study1_processing1 <- study1_preprocess %>% 
+  rename_with(.cols = c(Q13, Q14, Q15), ~c("transmission_ID", "cure_ID", "info_request"))
 ```
 
 ###Part b
@@ -93,8 +93,8 @@ Many other variables are also unhelpfully labelled. For example the last six var
 ```{r, error=TRUE}
 #Method 2: Renaming by index/position
 #last_col() is just a function that returns the index number of the last variable in the dataset (33 in this one), and the offset subtracts that number from it (33-5=28)
-Study1_processing2 <- Study1_processing1 %>% 
-  rename_with(.cols = last_col(offset = 5):last_col(), ~c("PUT COMMA SEPARATED LIST OF VARIABLE NAMES AS STRINGS HERE FOR THE LAST SIX VARIABLES IN ORDER"))
+study1_processing2 <- study1_processing1 %>% 
+  rename_with(.cols = last_col(offset = 5):last_col(), ~c("gender", "race", "education", "partyID", "voter_regis", "ideology"))
 ```
 
 ###Part c
@@ -102,29 +102,40 @@ We can also rename all variables that satisfy a logical condition. Note that eve
 
 ```{r, error=TRUE}
 #Method 3: Renaming by logical condition
-Study1_processing3 <- Study1_processing2 %>% 
-  rename_with(.cols = contains("Q11"), ~c("PUT COMMA SEPARATED LIST OF EMOTIONS NAMES AS STRINGS HERE FOR THESE VARIABLES IN ORDER"))
+study1_processing3 <- study1_processing2 %>% 
+  rename_with(.cols = contains("Q11"), ~c("Q11_disgust", "Q11_grossedout", "Q11_repulsed", "Q11_afraid", "Q11_anxious", "Q11_worried"))
 ```
 
 ###Part d
 We may not need all the variables in the dataset. For instance, the analysis below will not rely on knowing what topic of additional information people were interested in (Q16\_1 through Q16\_7). **The code below will search for a string in the variable labels and return only the variables that DO NOT include that string. Modify the code and use it to drop the unneeded variables from the dataset. Be sure to save the modified dataset as a new object to continue working with it.**
 
 ```{r, error=TRUE}
-Study1_processing4 <- Study1_processing3 %>% 
-  select(-contains("TARGETSTRING"))
+study1_processing4 <- study1_processing3 %>% 
+  select(-contains("Q16_"))
 ```
 
 ###Part e
 Another issue often encountered is that the way missing data is coded can vary across data sources. Here responses are marked with the value of 8 for the respondent skipping the question. The functions mutate() and across() used in tandem are useful for recoding many variables at once in the same manner. across() specifies which columns to mutate and what function to apply to them all, in this case we'll want to use the function na_if() which recodes a variable as NA if it matches the second argument. **Modify the code below to change the relevant data columns to be binary variables with NA for missing data. Hint: For this dataset all values of 8 indicate a kind of missing data.**
 
 ```{r, error=TRUE}
-Study1_processing5 <- Study1_processing4 %>% 
-  mutate(across(.cols = "PUT TARGET COLUMNS HERE", ~na_if(.,"PUT TARGET VALUE HERE")))
+study1_processing5 <- study1_processing4 %>% 
+  mutate(across(.cols = c(Q11_disgust, Q11_grossedout, Q11_repulsed, Q11_afraid, Q11_anxious, Q11_worried, transmission_ID, cure_ID, info_request, Q17_6, Q17_7), ~na_if(.,8)))
 ```
 
 
 ###Part f
 Some of the binary data are also coded with 1s and 2s as opposed to 0s and 1s. These include the identification of symptoms, the request for additional information, identification that there is a cure, and voter registration status. **Use the mutate function to recode those variables to be binary with 1 for yes and 0 for no. Hint: You can look at the solutions for previous data exercises but you'll want to combine the mutate() and ifelse() functions.** 
+
+
+```{r, part f}
+
+study1 <-study1_processing5 %>% 
+  mutate(info_request = ifelse(info_request == 2, 0, info_request),
+         cure_ID = ifelse(cure_ID == 2, 0, cure_ID),
+         voter_regis = ifelse(voter_regis == 2, 0, voter_regis))
+ 
+```
+
 
 
 ###Part g
@@ -149,8 +160,50 @@ The paper lays out three distinct hypotheses concerning the impact of disgust on
 ###Part a
 Often times when running an experiment a researcher will include a 'manipulation check' to confirm that the treatment was noticed and is having some of its intended effect. In this study they ask about the emotional response to the fictitious virus using two three item emotional indices: anxiety (afraid, anxious, worried) and disgust (disgusted, grossed out, repulsed). Take the average of the responses for each emotional index and check to see if the treatments had the desired manipulation. **Compare the average anxiety and disgust responses for each of the four treatments. Are there statistically significant differences in the way one would expect?**
 
+
+```{r, q3 a}
+
+study1 %>% 
+  group_by(treat_rand1) %>% 
+  summarise(across(.cols = c(Q11_disgust, Q11_grossedout, Q11_repulsed, Q11_afraid, Q11_anxious, Q11_worried), 
+                   ~mean(.x, na.rm = TRUE)))
+
+
+study1 <- study1 %>%
+  mutate(low_disgust = if_else(treat_rand1 %in% c(1,2), 1, 0),
+         low_anxiety = if_else(treat_rand1 %in% c(1,3), 1, 0))
+
+difference_in_means(Q11_disgust ~ low_disgust, data = study1)
+
+
+difference_in_means(Q11_anxious ~ low_anxiety, data = study1)
+
+
+```
+
+
 ###Part b
 Choose one of the three hypotheses identified in Question 2. Compare the responses on one or more of the outcomes relevant to that hypothesis. Is the hypothesis supported by the data? **For one or more outcome variables relevant to one of the three hypotheses check for statistically significant differences. What can we conclude from the data?**
+
+
+```{r, q3 b}
+
+study1_h3test <- study1 %>% 
+  mutate(disgust = ifelse(Q11_disgust >= 3 | Q11_grossedout >= 3 | Q11_repulsed >= 3, 1, 0))
+
+
+study1_h3test %>% 
+  group_by(disgust) %>% 
+  summarise(mean(info_request, na.rm = TRUE))
+
+
+difference_in_means(info_request ~ disgust, data = study1_h3test)
+
+
+```
+
+
+
 
 ##Question 4: DATA SCIENCE QUESTION
 ###Part a
@@ -275,6 +328,10 @@ Above is an example of the kind of data cleaning that sometimes must be done to 
 ##Question 6
 ###Part a
 What are the treatment conditions for Study 2? **What are the treatment conditions for Study 2? How do they differ from Study 1? Hint: Look at page 273 for the treatment conditions of Study 2**
+
+
+
+
 
 ###Part b
 Study 2 asks about three different categories of emotions: disgust (disgusted, grossed out, revulsion), anxiety (anxious, nervous, worried), and anger (angry, hateful, resentful). Did the treatments succeed in manipulating emotions? Was the impact limited to disgust? **Pool respondents into low disgust and high disgust treatments. Check for statistically significant differences in the average answer to each emotion index.**
