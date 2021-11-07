@@ -336,8 +336,74 @@ What are the treatment conditions for Study 2? **What are the treatment conditio
 ###Part b
 Study 2 asks about three different categories of emotions: disgust (disgusted, grossed out, revulsion), anxiety (anxious, nervous, worried), and anger (angry, hateful, resentful). Did the treatments succeed in manipulating emotions? Was the impact limited to disgust? **Pool respondents into low disgust and high disgust treatments. Check for statistically significant differences in the average answer to each emotion index.**
 
+```{r, q6 b}
+
+study2_test <- Study2 %>% 
+  
+  #if conditions included digusting imagery coded 1 for high disgust, 0 for low digust
+  mutate(disgust_cond = ifelse(treatment == 2 | treatment == 4, 1, 0))
+
+study2_avgs <- study2_test %>% 
+  group_by(disgust_cond) %>%  
+  summarise(across(.cols = c(E_disgust:E_worry), 
+                   ~mean(.x, na.rm = TRUE)))
+
+
+#find difference between conditions
+study2_avgs %>% summarise(across(.cols = c(E_disgust:E_worry), 
+                   ~diff(.x)))
+
+
+difference_in_means(E_disgust ~ disgust_cond, data = study2_test)
+
+difference_in_means(E_gross ~ disgust_cond, data = study2_test)
+
+
+```
+
+
+
+
 ###Part c
 Plot the distribution of disgust, anxiety, and anger for low disgust and high disgust treatment conditions. **Pool respondents into low disgust and high disgust treatments. Plot the distributions for the average item response to each of the three emotional categories.**
+
+
+```{r, q6 c}
+
+disgust_diff <- difference_in_means(E_disgust ~ disgust_cond, data = study2_test)
+anxiety_diff <- difference_in_means(E_anxiety ~ disgust_cond, data = study2_test)
+anger_diff <- difference_in_means(E_angry ~ disgust_cond, data = study2_test)
+
+
+conditions <- c('Low Disgust', 'High Disgust')
+
+disgust_point <- c(1.984416, 	2.564738)
+anxiety_point <- anxiety_diff$coefficients
+anger_point <- anger_diff$coefficients
+
+lowbounds_disgust <- disgust_diff$conf.low
+upbounds_disgust <- disgust_diff$conf.high
+
+lowbounds_anxiety <- anxiety_diff$conf.low
+upbounds_anxiety <- anxiety_diff$conf.high
+
+lowbounds_anger <- anger_diff$conf.low
+upbounds_anger <- anger_diff$conf.high
+
+
+disgust_treatment_effect_plot_data <- tibble(conditions,disgust_point,lowbounds_disgust,upbounds_disgust)
+
+ggplot(disgust_treatment_effect_plot_data, 
+       aes(x=factor(conditions, levels = conditions), 
+           y=disgust_point)) + geom_point()
+
+
+  xlab('Experimental Outcomes') + 
+  ylab('Treatment Effect (with 95% CI)')
+
+
+```
+
 
 
 ##Question 7
