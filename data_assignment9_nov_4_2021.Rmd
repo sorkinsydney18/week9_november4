@@ -368,41 +368,45 @@ difference_in_means(E_gross ~ disgust_cond, data = study2_test)
 Plot the distribution of disgust, anxiety, and anger for low disgust and high disgust treatment conditions. **Pool respondents into low disgust and high disgust treatments. Plot the distributions for the average item response to each of the three emotional categories.**
 
 
-```{r, q6 c}
+```{r}
 
-disgust_diff <- difference_in_means(E_disgust ~ disgust_cond, data = study2_test)
-anxiety_diff <- difference_in_means(E_anxiety ~ disgust_cond, data = study2_test)
-anger_diff <- difference_in_means(E_angry ~ disgust_cond, data = study2_test)
+sd_dis <- sd(study2_test$E_disgust)
 
-
-conditions <- c('Low Disgust', 'High Disgust')
-
-disgust_point <- c(1.984416, 	2.564738)
-anxiety_point <- anxiety_diff$coefficients
-anger_point <- anger_diff$coefficients
-
-lowbounds_disgust <- disgust_diff$conf.low
-upbounds_disgust <- disgust_diff$conf.high
-
-lowbounds_anxiety <- anxiety_diff$conf.low
-upbounds_anxiety <- anxiety_diff$conf.high
-
-lowbounds_anger <- anger_diff$conf.low
-upbounds_anger <- anger_diff$conf.high
+study2_test %>% 
+  ggplot(aes(x = disgust_cond, y = E_disgust, group = disgust_cond)) +
+  geom_boxplot() + 
+  stat_summary(fun.y=mean, geom="point", shape=16, size=4) +
+  scale_x_continuous(breaks = c(0, 1), labels = c("Low Disgust", "High Disgust")) +
+  labs(title = "Disgust",
+       x = "",
+       y = "Subject Disgust Score")
 
 
-disgust_treatment_effect_plot_data <- tibble(conditions,disgust_point,lowbounds_disgust,upbounds_disgust)
+study2_test %>% 
+  ggplot(aes(x = disgust_cond, y = E_anxiety, group = disgust_cond)) +
+  geom_boxplot() +
+  stat_summary(fun.y=mean, geom="point", shape=16, size=4) +
+  scale_x_continuous(breaks = c(0, 1), labels = c("Low Disgust", "High Disgust")) +
+  labs(title = "Anxiety",
+       x = "",
+       y = "Subject Anxiety Score")
 
-ggplot(disgust_treatment_effect_plot_data, 
-       aes(x=factor(conditions, levels = conditions), 
-           y=disgust_point)) + geom_point()
 
-
-  xlab('Experimental Outcomes') + 
-  ylab('Treatment Effect (with 95% CI)')
+study2_test %>% 
+  ggplot(aes(x = disgust_cond, y = E_angry, group = disgust_cond)) +
+  geom_boxplot() +
+  stat_summary(fun.y=mean, geom="point", shape=16, size=4) +
+  scale_x_continuous(breaks = c(0, 1), labels = c("Low Disgust", "High Disgust")) +
+  labs(title = "Anger",
+       x = "",
+       y = "Subject Anger Score")
 
 
 ```
+
+
+
+
 
 
 
